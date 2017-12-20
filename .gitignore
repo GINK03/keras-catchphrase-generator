@@ -1,0 +1,3 @@
+*.pkl
+dataset/*.pkl
+models/*.h5
