@@ -61,7 +61,7 @@ def train():
       random_optim = random.choice( [Adam(), SGD(), RMSprop()] )
       autoencoder.fit(Xs, Ys, 
           shuffle=True, 
-          batch_size=batch_size, epochs=1, 
+          batch_size=batch_size, epochs=10, 
           callbacks=[print_callback] )
       counter += 1
       if counter%10 == 0:

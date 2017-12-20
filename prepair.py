@@ -92,7 +92,7 @@ if '--make' in sys.argv:
       cdense[index][b] = 1.0
     
     pairs.append( (idense, cdense) )
-    if len(pairs) == 100:
+    if len(pairs) == 250:
       chunk = gzip.compress(pickle.dumps(pairs))
       open('dataset/{:09d}.pkl'.format(num), 'wb').write( chunk )
       pairs = []
