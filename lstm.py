@@ -27,7 +27,8 @@ encoded     = LSTM(512)(inputs)
 encoder     = Model(inputs, encoded)
 
 x           = RepeatVector(out_timesteps)(encoded)
-x           = Bi(LSTM(512, return_sequences=True))(x)
+x           = Bi(LSTM(512*3, return_sequences=True))(x)
+x           = TD(Dense(2504, activation='relu'))(x)
 decoded     = TD(Dense(2504, activation='softmax'))(x)
 
 autoencoder = Model(inputs, decoded)
@@ -50,7 +51,7 @@ def train():
 
   counter = 0
   for i in range(2000):
-    for name in glob.glob('dataset/*.pkl'):
+    for name in glob.glob('dataset/000000249.pkl'):
       pairs = pickle.loads(gzip.decompress(open(name,'rb').read()))
       idenses, cdenses = [], []
       for idense, cdense in pairs:
@@ -63,44 +64,26 @@ def train():
           shuffle=True, 
           batch_size=batch_size, epochs=10, 
           callbacks=[print_callback] )
-      counter += 1
       if counter%10 == 0:
         autoencoder.save("models/{:09d}_{:09f}.h5".format(counter, buff['loss']))
+      counter += 1
 
 def predict():
-  c_i = pickle.loads( open("dataset/c_i.pkl", "rb").read() )
-  i_c = { i:c for c, i in c_i.items() }
-  xss = []
-  heads = []
-  with open("dataset/corpus.distinct.txt", "r") as f:
-    for fi, line in enumerate(f):
-      print("now iter ", fi)
-      line = line.strip()
-      head, tail = line.split("___SP___")
-      heads.append( head ) 
-      xs = [ [0.]*128 for _ in range(50) ]
-      for i, c in enumerate(head): 
-        xs[i][c_i[c]] = 1.
-      xss.append( np.array( list(reversed(xs)) ) )
-    
-  Xs = np.array( xss )
-  print( Xs)
-  model = sorted( glob.glob("models/*.h5") ).pop(0)
+  for name in glob.glob('dataset/000000249.pkl'):
+    pairs = pickle.loads(gzip.decompress(open(name,'rb').read()))
+    idenses, cdenses = [], []
+    for idense, cdense in pairs:
+      idenses.append(idense)
+      cdenses.append(cdense)
+  Xs, Ys = np.array(idenses), np.array(cdenses)
+  
+  model = sorted( glob.glob("models/*.h5") ).pop()
   print("loaded model is ", model)
   autoencoder.load_weights(model)
 
   Ys = autoencoder.predict( Xs ).tolist()
-  for ez, (head, y) in enumerate(zip(heads, Ys)):
-    terms = []
-    for v in y:
-      term = max( [(s, i_c[i]) for i,s in enumerate(v)] , key=lambda x:x[0])[1]
-      terms.append( term )
-    tail = re.sub(r"」.*?$", "」", "".join( terms ) )
-    print(ez, head, "___SP___", tail )
-if __name__ == '__main__':
-  if '--test' in sys.argv:
-    test()
 
+if __name__ == '__main__':
   if '--train' in sys.argv:
     train()
 
