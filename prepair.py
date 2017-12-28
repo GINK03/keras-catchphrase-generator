@@ -41,7 +41,7 @@ if '--freq' in sys.argv:
   for index, (term, freq) in enumerate(sorted(term_freq.items(), key=lambda x:x[1]*-1)):
     print(index, term, freq)
     terms.append(term)
-    if index > 2500:
+    if index > 3500:
       break
 
   random.shuffle(terms)
@@ -52,20 +52,20 @@ if '--freq' in sys.argv:
 
   open('intro_term_index.json', 'w').write( json.dumps(term_index, indent=2, ensure_ascii=False))
 
- 
+  ''' 
   term_index = {}
   for catchs, intros in dataset:
     for term in catchs: 
       if term_index.get(term) is None:
         term_index[term] = len(term_index)
   open('catch_term_index.json', 'w').write( json.dumps(term_index, indent=2, ensure_ascii=False))
-
+  '''
 if '--make' in sys.argv:
   dataset = json.loads(open('dataset.json').read())
   term_index = json.loads(open('intro_term_index.json').read())
   
-  term_index['<EOS>'] = len(term_index)
   term_index['<UNK>'] = len(term_index)
+  term_index['<EOS>'] = len(term_index)
 
   pairs = []
   for num, (catchs, intros) in enumerate(dataset):
@@ -82,7 +82,7 @@ if '--make' in sys.argv:
       idense[index][b] = 1.0
 
     cbase = [term_index['<EOS>']]*100
-    for index, term in enumerate(intros[:100]):
+    for index, term in enumerate(catchs[:100]):
       if term_index.get(term) is None:
         cbase[index] = term_index['<UNK>']
       else:

@@ -19,17 +19,19 @@ import copy
 import os
 import re
 import gzip
+import json
 
+VOC_SIZE = 3002
 in_timesteps   = 300
 out_timesteps  = 100
-inputs      = Input(shape=(in_timesteps, 2504))
+inputs      = Input(shape=(in_timesteps, VOC_SIZE))
 encoded     = LSTM(512)(inputs)
 encoder     = Model(inputs, encoded)
 
 x           = RepeatVector(out_timesteps)(encoded)
-x           = Bi(LSTM(512*3, return_sequences=True))(x)
-x           = TD(Dense(2504, activation='relu'))(x)
-decoded     = TD(Dense(2504, activation='softmax'))(x)
+x           = Bi(LSTM(768, return_sequences=True))(x)
+x           = TD(Dense(VOC_SIZE, activation='relu'))(x)
+decoded     = TD(Dense(VOC_SIZE, activation='softmax'))(x)
 
 autoencoder = Model(inputs, decoded)
 autoencoder.compile(optimizer=Adam(), loss='categorical_crossentropy')
@@ -80,8 +82,28 @@ def predict():
   model = sorted( glob.glob("models/*.h5") ).pop()
   print("loaded model is ", model)
   autoencoder.load_weights(model)
-
-  Ys = autoencoder.predict( Xs ).tolist()
+  
+  term_index = json.loads( open('intro_term_index.json').read() )
+  term_index['<EOS>'] = len(term_index)
+  term_index['<UNK>'] = len(term_index)
+  index_term = { index:term for term, index in term_index.items() }
+  Ys = autoencoder.predict( Xs )
+  for ys, xs in zip(Ys.tolist(), Xs.tolist()):
+    print('INPUT')
+    for x in xs:
+      xi = np.argmax(x)
+      if index_term[xi] == '<EOS>':
+        print('<EOS>')
+        break
+      print( index_term[xi], end='' )
+    print('OUTOUT')
+    for y in ys:
+      yi = np.argmax(y)
+      if index_term[yi] == '<EOS>':
+        print('<EOS>')
+        break
+      print( index_term[yi], end='' )
+    #print( index_term[yi], index_term[xi] )
 
 if __name__ == '__main__':
   if '--train' in sys.argv:
