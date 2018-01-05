@@ -25,12 +25,14 @@ VOC_SIZE = 3504
 in_timesteps   = 300
 out_timesteps  = 100
 inputs      = Input(shape=(in_timesteps, VOC_SIZE))
-encoded     = GRU(1024)(inputs)
+encoded     = Dense(256, activation='relu')(inputs)
+encoded     = Flatten()(encoded)
+encoded     = Dense(512, activation='relu')(encoded)
 encoder     = Model(inputs, encoded)
 
 x           = RepeatVector(out_timesteps)(encoded)
-x           = Bi(GRU(1500, return_sequences=True))(x)
-#x           = TD(Dense(VOC_SIZE*2, activation='relu'))(x)
+x           = Bi(GRU(512*2, return_sequences=True))(x)
+#x           = TD(Dense(VOC_SIZE, activation='relu'))(x)
 decoded     = TD(Dense(VOC_SIZE, activation='softmax'))(x)
 
 autoencoder = Model(inputs, decoded)
@@ -54,6 +56,7 @@ def train():
   counter = 0
   for i in range(2000):
     for name in glob.glob('dataset/*.pkl'):
+      print(i, name)
       pairs = pickle.loads(gzip.decompress(open(name,'rb').read()))
       idenses, cdenses = [], []
       for idense, cdense in pairs:
@@ -62,9 +65,9 @@ def train():
       Xs, Ys = np.array(idenses), np.array(cdenses)
       batch_size = random.randint( 3, 32 )
       random_optim = random.choice( [Adam(), SGD(), RMSprop()] )
-      autoencoder.fit(Xs, Ys, 
+      autoencoder.fit( Xs, Ys, 
           shuffle=True, 
-          batch_size=batch_size, epochs=random.randint(1,5), 
+          batch_size=batch_size, epochs=1, 
           callbacks=[print_callback] )
       if counter%10 == 0:
         autoencoder.save("models/{:09d}_{:09f}.h5".format(counter, buff['loss']))
