@@ -21,16 +21,16 @@ import re
 import gzip
 import json
 
-VOC_SIZE = 3002
+VOC_SIZE = 3504
 in_timesteps   = 300
 out_timesteps  = 100
 inputs      = Input(shape=(in_timesteps, VOC_SIZE))
-encoded     = LSTM(512)(inputs)
+encoded     = GRU(1024)(inputs)
 encoder     = Model(inputs, encoded)
 
 x           = RepeatVector(out_timesteps)(encoded)
-x           = Bi(LSTM(768, return_sequences=True))(x)
-x           = TD(Dense(VOC_SIZE, activation='relu'))(x)
+x           = Bi(GRU(1500, return_sequences=True))(x)
+#x           = TD(Dense(VOC_SIZE*2, activation='relu'))(x)
 decoded     = TD(Dense(VOC_SIZE, activation='softmax'))(x)
 
 autoencoder = Model(inputs, decoded)
@@ -53,18 +53,18 @@ def train():
 
   counter = 0
   for i in range(2000):
-    for name in glob.glob('dataset/000000249.pkl'):
+    for name in glob.glob('dataset/*.pkl'):
       pairs = pickle.loads(gzip.decompress(open(name,'rb').read()))
       idenses, cdenses = [], []
       for idense, cdense in pairs:
         idenses.append(idense)
         cdenses.append(cdense)
       Xs, Ys = np.array(idenses), np.array(cdenses)
-      batch_size = random.randint( 32, 64 )
+      batch_size = random.randint( 3, 32 )
       random_optim = random.choice( [Adam(), SGD(), RMSprop()] )
       autoencoder.fit(Xs, Ys, 
           shuffle=True, 
-          batch_size=batch_size, epochs=10, 
+          batch_size=batch_size, epochs=random.randint(1,5), 
           callbacks=[print_callback] )
       if counter%10 == 0:
         autoencoder.save("models/{:09d}_{:09f}.h5".format(counter, buff['loss']))
@@ -103,7 +103,7 @@ def predict():
         print('<EOS>')
         break
       print( index_term[yi], end='' )
-    #print( index_term[yi], index_term[xi] )
+    print()
 
 if __name__ == '__main__':
   if '--train' in sys.argv:
