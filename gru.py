@@ -27,12 +27,12 @@ out_timesteps  = 100
 inputs      = Input(shape=(in_timesteps, VOC_SIZE))
 encoded     = Dense(256, activation='relu')(inputs)
 encoded     = Flatten()(encoded)
-encoded     = Dense(512, activation='relu')(encoded)
+encoded     = Dense(1000, activation='relu')(encoded)
 encoder     = Model(inputs, encoded)
 
 x           = RepeatVector(out_timesteps)(encoded)
-x           = Bi(GRU(512*2, return_sequences=True))(x)
-#x           = TD(Dense(VOC_SIZE, activation='relu'))(x)
+x           = Bi(GRU(256, return_sequences=True))(x)
+x           = TD(Dense(VOC_SIZE*2, activation='relu'))(x)
 decoded     = TD(Dense(VOC_SIZE, activation='softmax'))(x)
 
 autoencoder = Model(inputs, decoded)
@@ -55,8 +55,8 @@ def train():
 
   counter = 0
   for i in range(2000):
-    for name in glob.glob('dataset/*.pkl'):
-      print(i, name)
+    for index, name in enumerate(sorted(glob.glob('dataset/*.pkl'))):
+      print(i, index, name)
       pairs = pickle.loads(gzip.decompress(open(name,'rb').read()))
       idenses, cdenses = [], []
       for idense, cdense in pairs:
