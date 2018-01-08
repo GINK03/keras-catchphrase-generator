@@ -25,13 +25,13 @@ VOC_SIZE = 3504
 in_timesteps   = 300
 out_timesteps  = 100
 inputs      = Input(shape=(in_timesteps, VOC_SIZE))
-encoded     = Dense(256, activation='relu')(inputs)
+encoded     = Dense(512, activation='relu')(inputs)
 encoded     = Flatten()(encoded)
-encoded     = Dense(1000, activation='relu')(encoded)
+encoded     = Dense(1024, activation='relu')(encoded)
 encoder     = Model(inputs, encoded)
 
 x           = RepeatVector(out_timesteps)(encoded)
-x           = Bi(GRU(256, return_sequences=True))(x)
+x           = Bi(GRU(300, return_sequences=True))(x)
 x           = TD(Dense(VOC_SIZE*2, activation='relu'))(x)
 decoded     = TD(Dense(VOC_SIZE, activation='softmax'))(x)
 
@@ -63,11 +63,13 @@ def train():
         idenses.append(idense)
         cdenses.append(cdense)
       Xs, Ys = np.array(idenses), np.array(cdenses)
-      batch_size = random.randint( 3, 32 )
+      batch_size = random.randint( 1, 32 )
       random_optim = random.choice( [Adam(), SGD(), RMSprop()] )
       autoencoder.fit( Xs, Ys, 
           shuffle=True, 
-          batch_size=batch_size, epochs=1, 
+          optimizer=random_optim,
+          batch_size=batch_size, 
+          epochs=1, 
           callbacks=[print_callback] )
       if counter%10 == 0:
         autoencoder.save("models/{:09d}_{:09f}.h5".format(counter, buff['loss']))
